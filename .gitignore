@@ -7,3 +7,5 @@ testdata
 *.db
 
 _output
+
+vendor

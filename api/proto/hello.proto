@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package hello;
+
+// +gen:openapi
+service Hello {
+  // +gen:get=/api/v1/echo/{name}
+  rpc Echo(EchoReq) returns (EchoRsp);
+}
+
+message EchoReq {
+  string name = 1;
+}
+
+message EchoRsp {
+  string reply = 2;
+}
