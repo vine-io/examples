@@ -5,6 +5,9 @@ go 1.17
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.2.0
+	github.com/sony/gobreaker v0.4.1
+	github.com/vine-io/plugins/wrapper/breaker/gobreaker v1.0.0
+	github.com/vine-io/plugins/wrapper/ratelimiter/uber v1.0.0
 	github.com/vine-io/vine v1.0.3
 	google.golang.org/grpc v1.40.0
 )
@@ -36,6 +39,7 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/vine-io/cli v1.3.0 // indirect
 	github.com/vine-io/gscheduler v0.3.0 // indirect
+	go.uber.org/ratelimit v0.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
 	golang.org/x/sys v0.0.0-20210603081109-ebe580a85c40 // indirect
