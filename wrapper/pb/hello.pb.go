@@ -7,14 +7,13 @@ import (
 	context "context"
 	ebinary "encoding/binary"
 	fmt "fmt"
-	io "io"
-	math "math"
-	bits "math/bits"
-
 	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	io "io"
+	math "math"
+	bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -29,6 +28,7 @@ var _ = ebinary.BigEndian
 const _ = grpc.SupportPackageIsVersion4
 
 type Request struct {
+	// +gen:required
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 

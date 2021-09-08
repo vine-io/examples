@@ -5,6 +5,7 @@ service Hello {
 }
 
 message Request {
+  // +gen:required
   string name = 1;
 }
 

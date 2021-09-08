@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/gogo/protobuf v1.3.2
+	github.com/google/uuid v1.2.0
 	github.com/vine-io/vine v1.0.3
 	google.golang.org/grpc v1.40.0
 )
@@ -16,7 +17,6 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.4.3 // indirect
-	github.com/google/uuid v1.2.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
