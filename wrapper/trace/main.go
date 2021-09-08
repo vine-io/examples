@@ -18,8 +18,7 @@ import (
 	"github.com/vine-io/vine/util/wrapper"
 )
 
-type hello struct {
-}
+type hello struct {}
 
 func (h hello) Echo(ctx context.Context, request *pb.Request, response *pb.Response) error {
 	ctx, span := trace.DefaultTracer.Start(ctx, "echo")
