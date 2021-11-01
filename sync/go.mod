@@ -3,8 +3,9 @@ module github.com/vine-io/examples/sync
 go 1.17
 
 require (
-	github.com/vine-io/plugins/sync/etcd v1.0.3
-	github.com/vine-io/vine v1.0.3
+	github.com/google/uuid v1.2.0
+	github.com/vine-io/plugins/sync/etcd v1.3.4
+	github.com/vine-io/vine v1.3.4
 )
 
 require (
@@ -12,7 +13,6 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/uuid v1.2.0 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.0 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.0 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.0 // indirect

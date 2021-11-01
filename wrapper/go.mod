@@ -8,7 +8,7 @@ require (
 	github.com/sony/gobreaker v0.4.1
 	github.com/vine-io/plugins/wrapper/breaker/gobreaker v1.0.0
 	github.com/vine-io/plugins/wrapper/ratelimiter/uber v1.0.0
-	github.com/vine-io/vine v1.0.3
+	github.com/vine-io/vine v1.3.4
 	google.golang.org/grpc v1.40.0
 )
 

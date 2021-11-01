@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/vine-io/cli"
 	"github.com/vine-io/examples/api/handler"
@@ -87,7 +87,8 @@ func main() {
 	opts = append(opts, server.EnableCORS(true))
 
 	// create the router
-	app := fiber.New(fiber.Config{DisableStartupMessage: true})
+	gin.SetMode(gin.ReleaseMode)
+	app := gin.New()
 
 	if enableOpenAPI {
 		openapi.RegisterOpenAPI(app)

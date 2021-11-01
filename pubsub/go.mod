@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
-	github.com/vine-io/vine v1.0.0
+	github.com/vine-io/vine v1.3.4
 	google.golang.org/grpc v1.40.0
 )
 
