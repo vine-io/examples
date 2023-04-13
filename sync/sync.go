@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/rand"
@@ -25,7 +26,7 @@ func main() {
 	done := make(chan struct{}, 1)
 
 	id := uuid.NewString()
-	role1, err := s.Leader("leader", sync.LeaderNS("default"), sync.LeaderId(id), sync.LeaderTTL(3))
+	role1, err := s.Leader(context.Background(), "leader", sync.LeaderNS("default"), sync.LeaderId(id), sync.LeaderTTL(3))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -34,7 +35,7 @@ func main() {
 
 	go func() {
 		rid := uuid.NewString()
-		role2, err := s.Leader("leader", sync.LeaderNS("default"), sync.LeaderId(rid), sync.LeaderTTL(3))
+		role2, err := s.Leader(context.Background(), "leader", sync.LeaderNS("default"), sync.LeaderId(rid), sync.LeaderTTL(3))
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -53,7 +54,7 @@ func main() {
 
 	time.Sleep(time.Second * 1)
 
-	ms, _ := s.ListMembers(sync.MemberNS("default"))
+	ms, _ := s.ListMembers(context.Background(), sync.MemberNS("default"))
 	for _, m := range ms {
 		fmt.Println(m)
 	}
