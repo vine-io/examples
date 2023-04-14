@@ -55,7 +55,6 @@ func main() {
 		log.Fatalln(err)
 	}
 
-
 	if err := db.Delete(&User{}, "id = ?", 1).Error; err != nil {
 		log.Fatalln(err)
 	}

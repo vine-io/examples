@@ -1,75 +1,66 @@
 package main
 
 import (
+	"examples/api/handler"
+	pb "examples/api/proto"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/vine-io/cli"
-	"github.com/vine-io/examples/api/handler"
-	pb "github.com/vine-io/examples/api/proto"
-
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/vine-io/plugins/registry/etcd"
 	"github.com/vine-io/vine"
-	ahandler "github.com/vine-io/vine/lib/api/handler"
 	"github.com/vine-io/vine/lib/api/handler/openapi"
-	arpc "github.com/vine-io/vine/lib/api/handler/rpc"
-	"github.com/vine-io/vine/lib/api/resolver"
-	"github.com/vine-io/vine/lib/api/resolver/grpc"
-	"github.com/vine-io/vine/lib/api/router"
-	regRouter "github.com/vine-io/vine/lib/api/router/registry"
 	"github.com/vine-io/vine/lib/api/server"
 	httpapi "github.com/vine-io/vine/lib/api/server/http"
 	log "github.com/vine-io/vine/lib/logger"
+	uapi "github.com/vine-io/vine/util/api"
 	"github.com/vine-io/vine/util/helper"
-	"github.com/vine-io/vine/util/namespace"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"time"
 )
 
 var (
-	Address       = ":8080"
-	Handler       = "rpc"
-	Type          = "api"
+	Address       = "127.0.0.1:8994"
 	APIPath       = "/"
 	enableOpenAPI = false
-
-	flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "api-address",
-			Usage:       "The specify for api address",
-			EnvVars:     []string{"VINE_API_ADDRESS"},
-			Value:       Address,
-			Destination: &Address,
-		},
-		&cli.BoolFlag{
-			Name:    "enable-openapi",
-			Usage:   "Enable OpenAPI3",
-			EnvVars: []string{"VINE_ENABLE_OPENAPI"},
-			Value:   true,
-		},
-		&cli.BoolFlag{
-			Name:    "enable-cors",
-			Usage:   "Enable CORS, allowing the API to be called by frontend applications",
-			EnvVars: []string{"VINE_API_ENABLE_CORS"},
-			Value:   true,
-		},
-	}
+	enableCors    = false
 )
 
+func init() {
+	pflag.BoolVar(&enableOpenAPI, "enable-openapi", false, "Enable OpenAPI3")
+	pflag.StringVar(&Address, "api-address", "127.0.0.1:8994", "The specify for api address")
+	pflag.BoolVar(&enableCors, "enable-cors", false, "Enable OpenAPI3")
+}
+
 func main() {
-	// Init API
+	pflag.Parse()
 	var opts []server.Option
 
-	// initialise service
-	svc := vine.NewService(
+	//初始化etcd
+	etcdClient, err := clientv3.New(clientv3.Config{Endpoints: []string{"localhost:2379"},
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	etcdRegistry := etcd.NewEtcdRegistry(etcdClient)
+	if err := etcdRegistry.Init(); err != nil {
+		log.Fatal(err)
+	}
+	// 构建新的服务
+	app := vine.NewService(
 		vine.Name("go.vine.api"),
-		vine.Id(uuid.New().String()),
+		vine.ID(uuid.New().String()),
 		vine.Version("v1.0.0"),
 		vine.Metadata(map[string]string{
 			"api-address": Address,
 		}),
-		vine.Flags(flags...),
-		vine.Action(func(ctx *cli.Context) error {
-			enableOpenAPI = ctx.Bool("enable-openapi")
+		vine.Action(func(command *cobra.Command, strings []string) error {
+			ctx := command.PersistentFlags()
 
-			if ctx.Bool("enable-tls") {
-				config, err := helper.TLSConfig(ctx)
+			enableTLS, _ := ctx.GetBool("enable-tls")
+			if enableTLS {
+				config, err := helper.TLSConfig(command)
 				if err != nil {
 					log.Errorf(err.Error())
 					return err
@@ -80,62 +71,47 @@ func main() {
 			}
 			return nil
 		}),
+		vine.Registry(etcdRegistry),
 	)
 
-	svc.Init()
+	// 服务初始化
+	if err := app.Init(); err != nil {
+		log.Fatalf("init api: %v", err)
+	}
 
 	opts = append(opts, server.EnableCORS(true))
 
-	// create the router
 	gin.SetMode(gin.ReleaseMode)
-	app := gin.New()
+	ginEngine := gin.New()
 
 	if enableOpenAPI {
-		openapi.RegisterOpenAPI(app)
+		openapi.RegisterOpenAPI(app.Client(), ginEngine)
 	}
 
-	// create the namespace resolver
-	nsResolver := namespace.NewResolver(Type, "go.vine")
-	// resolver options
-	ropts := []resolver.Option{
-		resolver.WithNamespace(nsResolver.ResolveWithType),
-		resolver.WithHandler(Handler),
-	}
-
-	log.Infof("Registering API RPC Handler at %s", APIPath)
-	rr := grpc.NewResolver(ropts...)
-	rt := regRouter.NewRouter(
-		router.WithHandler(arpc.Handler),
-		router.WithResolver(rr),
-		router.WithRegistry(svc.Options().Registry),
-	)
-	rp := arpc.NewHandler(
-		ahandler.WithNamespace("go.vine"),
-		ahandler.WithRouter(rt),
-		ahandler.WithClient(svc.Client()),
-	)
-	app.Group(APIPath, rp.Handle)
+	uapi.PrimpHandler(ginEngine, app.Client(), "go.vine")
 
 	api := httpapi.NewServer(Address)
 
 	if err := api.Init(opts...); err != nil {
 		log.Fatal(err)
 	}
-	api.Handle("/", app)
+	api.Handle(APIPath, ginEngine)
 
 	// Start API
 	if err := api.Start(); err != nil {
 		log.Fatal(err)
 	}
 
-	_ = pb.RegisterHelloHandler(svc.Server(), &handler.HelloWorld{})
-
-	// Run server
-	if err := svc.Run(); err != nil {
-		log.Fatal(err)
+	// 注册服务
+	if err := pb.RegisterHelloHandler(app.Server(), &handler.HelloWorld{}); err != nil {
+		log.Fatalf("register HelloWorld api: %v", err)
 	}
 
-	// Stop API
+	// 服务启动
+	if err := app.Run(); err != nil {
+		log.Fatalf("start api server: %v", err)
+	}
+
 	if err := api.Stop(); err != nil {
 		log.Fatal(err)
 	}
