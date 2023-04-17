@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package userv1;
+
+// +gen:dao
+message User {
+    // +gen:primaryKey
+	int32 id = 1;
+	string name = 2;
+	int32 age = 3;
+}

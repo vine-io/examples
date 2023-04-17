@@ -1,61 +1,79 @@
 package main
 
 import (
+	"context"
+	"examples/db/proto"
 	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	"log"
-	"time"
-
-	"github.com/vine-io/plugins/dao/mysql"
-	"github.com/vine-io/vine/lib/dao"
-	"github.com/vine-io/vine/lib/dao/logger"
 )
 
-type User struct {
-	Id   int32  `dao:"column:id;autoIncrement;primaryKey"`
-	Name string `dao:"column:name"`
-	Age  int32  `dao:"column:age"`
-}
-
 func main() {
-	dns := `root:123456@tcp(192.168.3.111:3306)/vine?charset=utf8&parseTime=True&loc=Local`
-	dialect := mysql.NewDialect(dao.DSN(dns), dao.Logger(logger.New(logger.Options{
-		SlowThreshold: 200 * time.Millisecond,
-		LogLevel:      logger.Info,
-	})))
-	if err := dialect.Init(); err != nil {
+	dns := `root:@tcp(127.0.0.1:8999)/vine?charset=utf8&parseTime=True&loc=Local`
+	gormDB, err := gorm.Open(mysql.Open(dns), &gorm.Config{})
+	if err != nil {
 		log.Fatalln(err)
 	}
 
-	db := dialect.NewTx()
-
-	if err := db.AutoMigrate(&User{}); err != nil {
+	store := userv1.NewUserStorage(gormDB, &userv1.User{})
+	if err != nil {
 		log.Fatalln(err)
 	}
 
-	u := &User{Name: "Mimi", Age: 11}
-	if err := db.Create(u).Error; err != nil {
-		log.Fatalln(err)
+	// 注册 Schema, 会在数据库中创建对应的表
+	if err := store.AutoMigrate(); err != nil {
+		log.Fatal(err)
 	}
 
-	u1 := &User{}
-	if err := db.Find(&u1, "name = ?", "Mimi").Error; err != nil {
-		log.Fatalln(err)
+	ctx := context.TODO()
+
+	user := &userv1.User{
+		Id:   1,
+		Name: "Mimi",
+		Age:  18,
 	}
 
-	fmt.Println(u1)
+	fmt.Println("Create ==============>")
+	s := userv1.NewUserStorage(gormDB, user)
+	out, err := s.XXCreate(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(out)
 
-	if err := db.Where("name = ?", "Mimi").First(&u1).Error; err != nil {
-		log.Fatalln(err)
+	fmt.Println("Updates ==============>")
+	s = userv1.NewUserStorage(gormDB, &userv1.User{Id: 1, Name: "Mimi_rename"})
+	out, err = s.XXUpdates(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(out)
+
+	fmt.Println("FindAll ==============>")
+	s = userv1.NewUserStorage(gormDB, &userv1.User{Age: 18})
+	outs, err := s.XXFindAll(ctx)
+	fmt.Println(outs)
+
+	fmt.Println("FindOne ==============>")
+	s = userv1.NewUserStorage(gormDB, &userv1.User{Name: "Mimi_rename"})
+	out, err = s.XXFindOne(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(out)
+
+	fmt.Println("SoftDelete ==============>")
+	s = userv1.NewUserStorage(gormDB, &userv1.User{Id: 1})
+	err = s.XXDelete(ctx, true)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	fmt.Println(u1)
-
-	u1.Name = "Mimi_update"
-	if err := db.Updates(u1).Error; err != nil {
-		log.Fatalln(err)
-	}
-
-	if err := db.Delete(&User{}, "id = ?", 1).Error; err != nil {
-		log.Fatalln(err)
+	fmt.Println("Delete ==============>")
+	s = userv1.NewUserStorage(gormDB, &userv1.User{Id: 1})
+	err = s.XXDelete(ctx, false)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
